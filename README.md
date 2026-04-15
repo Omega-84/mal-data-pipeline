@@ -1,22 +1,54 @@
-# mal-data-pipeline 🎌
+# mal-data-pipeline
 
-An end-to-end data platform for anime analytics and discovery, powered by the [MyAnimeList](https://myanimelist.net/) dataset via the [Jikan API](https://jikan.moe/).
+An end-to-end data engineering project that ingests anime data from the [MyAnimeList](https://myanimelist.net/) unofficial API ([Jikan](https://jikan.moe/)), transforms it using modern ELT tooling, and serves insights through an interactive analytics dashboard — complete with anime recommendations powered by vector embeddings.
 
 ---
 
 ## Overview
 
-**mal-data-pipeline** ingests anime data from the Jikan API, processes and stores it in a cloud data warehouse, and surfaces insights through an interactive dashboard — with a built-in recommendation engine that suggests similar anime using vector embeddings.
+This project was built as the capstone for the [DataTalks.Club Data Engineering Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp). It covers the full data engineering lifecycle: ingestion, storage, transformation, and visualization — with an ML layer on top for semantic recommendations.
+
+---
+
+## Architecture
+
+```
+Jikan API (MyAnimeList)
+        │
+        ▼
+Google Cloud Storage (Raw JSON)
+        │
+        ▼
+Bruin (ELT — Staging → Mart)
+        │
+        ▼
+BigQuery / Snowflake (Data Warehouse)
+        │
+        ├──▶ Streamlit Dashboard (Analytics)
+        └──▶ Vector Embeddings → Recommendation Engine
+```
 
 ---
 
 ## Features
 
-- 🔄 **ELT Pipeline** — Extracts raw anime data from Jikan API, loads to GCS, and transforms using Bruin
-- 🏗️ **Data Warehouse** — Structured, query-ready tables in BigQuery/Snowflake
-- 📊 **Analytics Dashboard** — Interactive Streamlit app for exploring anime trends, scores, genres, and studios
-- 🤖 **Anime Recommendations** — Vector embedding-based similarity search to discover new anime
-- ⚡ **On-Demand Ingestion** — Users can trigger the pipeline for any anime not yet in the dataset
+- **Batch ingestion** of anime data from the Jikan REST API
+- **Raw storage** in Google Cloud Storage as JSON
+- **ELT transformations** using [Bruin](https://bruin-data.github.io/bruin/) into a structured warehouse schema
+- **Interactive dashboard** built with Streamlit for exploring anime trends, scores, genres, and studios
+- **Anime recommendations** using vector embeddings (sentence-transformers) and similarity search
+
+---
+
+## Dashboard
+
+The Streamlit dashboard includes:
+
+- Top anime by score, popularity, and members
+- Genre and studio breakdowns
+- Score distribution and rating trends
+- Episode count analysis
+- Semantic anime recommendations — pick an anime, get similar ones
 
 ---
 
@@ -24,58 +56,53 @@ An end-to-end data platform for anime analytics and discovery, powered by the [M
 
 | Layer | Tool |
 |---|---|
-| Data Source | Jikan REST API (MyAnimeList) |
-| Ingestion & Transformation | Bruin |
+| Data Source | Jikan API (MyAnimeList) |
 | Raw Storage | Google Cloud Storage |
-| Data Warehouse | BigQuery |
-| Embeddings | Sentence Transformers (HuggingFace) |
+| ELT | Bruin |
+| Data Warehouse | BigQuery / Snowflake |
+| Transformation | SQL (via Bruin) |
+| Embeddings | sentence-transformers (HuggingFace) |
+| Vector Search | BigQuery Vector Search / Pinecone |
 | Dashboard | Streamlit |
 | Infrastructure | Terraform, GCP |
 
 ---
 
-## Architecture
+## Dataset
 
-```
-Jikan API
-    │
-    ▼
-Google Cloud Storage (raw JSON)
-    │
-    ▼
-Bruin (ELT)
-    │
-    ├──▶ BigQuery (dim_anime, dim_genre, fact_scores, fact_episodes)
-    │
-    └──▶ Embedding Pipeline
-              │
-              └──▶ Vector Store (BigQuery Vector Search)
+Data is sourced from [MyAnimeList](https://myanimelist.net/) via the unofficial [Jikan API v4](https://docs.api.jikan.moe/). The pipeline ingests metadata for the top anime by popularity, including:
 
-Streamlit App
-    ├── 📊 Dashboard — rankings, trends, genre breakdowns
-    └── 🔍 Recommendations — find similar anime
-```
+- Core metadata (title, type, status, episodes, score, rank)
+- Genre and studio associations
+- Score distributions and user statistics
+- Episode-level data
+- Streaming platform availability
 
 ---
 
-## Dashboard Preview
+## Project Structure
 
-> Coming soon
+```
+mal-data-pipeline/
+├── ingestion/          # Jikan API fetch scripts
+├── pipeline/           # Bruin ELT assets
+├── dashboard/          # Streamlit app
+├── embeddings/         # Vector embedding generation
+├── terraform/          # GCP infrastructure
+├── .env.example        # Environment variable template
+└── README.md
+```
 
 ---
 
 ## Getting Started
 
-> Setup instructions coming soon
+> Setup instructions coming soon.
 
 ---
 
-## Data Sources
+## Acknowledgements
 
-This project uses data from [MyAnimeList](https://myanimelist.net/) via the unofficial [Jikan API v4](https://docs.api.jikan.moe/). Jikan is a free, open-source REST API — no API key required.
-
----
-
-## License
-
-MIT
+- [Jikan](https://jikan.moe/) — Unofficial MyAnimeList REST API
+- [DataTalks.Club DE Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp)
+- [Bruin](https://bruin-data.github.io/bruin/)
