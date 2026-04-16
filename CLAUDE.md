@@ -41,8 +41,11 @@ bruin connections test --name <name>       # test a connection
 pipeline/
 ├── pipeline.yml          # schedule, default_connections, notifications
 └── assets/
-    ├── staging/          # raw → typed/cleaned assets (bq.sql)
-    └── mart/             # business-logic models consumed by dashboard
+    ├── seeds/            # dim_anime.csv + dim_anime.asset.yml (top 250 anime list)
+    ├── ingest/           # fetch_*.py — Jikan API → GCS JSON (idempotent)
+    ├── load/             # load_*.py — GCS JSON → BQ raw tables (WRITE_TRUNCATE)
+    ├── staging/          # stg_*.sql — raw → typed views (materialization: view)
+    └── mart/             # business-logic tables (materialization: table, partitioned + clustered)
 ```
 
 Asset files: `.sql` for SQL transforms, `.py` for Python logic, `.asset.yml` for YAML-defined assets (must end in `.asset.yml`). Connection for an asset defaults to `default_connections` in `pipeline.yml` if not set in the asset itself.
@@ -59,10 +62,18 @@ Base URL: `https://api.jikan.moe/v4`. No auth required. Rate-limited to ~3 req/s
 
 - `/anime?order_by=popularity&limit=25&page=N` — paginated anime list
 - `/anime/{id}/full` — full metadata for a single anime
+- `/anime/{id}/characters` — character list (filtered to `role == "Main"`)
+- `/anime/{id}/episodes?page=N` — paginated episode list
+
+All fetch functions live in `modules.py`. Ingest assets use `ThreadPoolExecutor` (max 3 workers for descriptions/characters, 2 for episodes) and `time.sleep(0.4)` per request to respect rate limits.
 
 ## GCS / BigQuery
 
 Credentials via service account JSON. Path set in `.env` as `GOOGLE_APPLICATION_CREDENTIALS`. Project and bucket names also come from `.env`. Never hardcode credentials or project IDs.
+
+GCS bucket: `jikan_anime_data_bucket`. Prefixes: `descriptions/`, `characters/`, `episodes/`.
+
+BigQuery dataset: `mal_pipeline`. All layers (raw, staging, mart) live in this single dataset. Raw tables: `raw_descriptions`, `raw_characters`, `raw_episodes`. Staging views: `stg_descriptions`, `stg_characters`, `stg_episodes`.
 
 ## Zoomcamp rubric notes
 
