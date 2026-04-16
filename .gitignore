@@ -212,3 +212,13 @@ __marimo__/
 *.ipynb
 *.json
 !.mcp.json
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/terraform.tfvars
+logs/runs
+logs/*.log
+*.py[cod]

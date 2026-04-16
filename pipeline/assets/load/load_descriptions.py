@@ -1,0 +1,41 @@
+""" @bruin
+name: load.load_descriptions
+type: python
+description: "Load anime description JSONs from GCS into BigQuery raw table"
+depends:
+  - ingest.fetch_descriptions
+@bruin """
+
+import json, os, sys
+from google.cloud import storage, bigquery
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+sys.path.insert(0, PROJECT_ROOT)
+
+PROJECT_ID  = "de-zoomcamp-485104"
+DATASET_ID  = "mal_pipeline"
+BUCKET_NAME = "jikan_anime_data_bucket"
+TABLE_ID    = "raw_descriptions"
+
+
+def main():
+    gcs = storage.Client()
+    bq  = bigquery.Client(project=PROJECT_ID)
+
+    rows = []
+    for blob in gcs.bucket(BUCKET_NAME).list_blobs(prefix="descriptions/"):
+        rows.append(json.loads(blob.download_as_text()))
+
+    job = bq.load_table_from_json(
+        rows,
+        f"{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}",
+        job_config=bigquery.LoadJobConfig(
+            write_disposition="WRITE_TRUNCATE",
+            autodetect=True,
+        ),
+    )
+    job.result()
+    print(f"Loaded {len(rows)} rows into {DATASET_ID}.{TABLE_ID}")
+
+
+main()

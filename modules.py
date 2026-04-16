@@ -47,7 +47,8 @@ def get_anime_data(anime_id: int) -> Dict:
         dct["airing_end"] = data["aired"].get("to")
         dct["studios"] = ", ".join(s["name"] for s in data.get("studios", []))
         dct["genres"] = ", ".join(g["name"] for g in data.get("genres", []))
-        dct["anime_type"] = ", ".join(d["name"] for d in data.get("demographics", []))
+        dct["anime_type"] = data.get("type")
+        dct["demographics"] = ", ".join(d["name"] for d in data.get("demographics", []))
         return dct
     except Exception:
         return {}

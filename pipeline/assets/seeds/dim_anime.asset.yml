@@ -1,0 +1,22 @@
+name: mal_pipeline.dim_anime
+type: bq.seed
+description: "Dimension table — top 250 anime by popularity rank"
+
+parameters:
+  path: ./dim_anime.csv
+
+columns:
+  - name: anime_id
+    type: integer
+    description: "MAL unique identifier"
+    checks:
+      - name: not_null
+      - name: unique
+  - name: title
+    type: string
+    description: "Primary title"
+    checks:
+      - name: not_null
+  - name: title_english
+    type: string
+    description: "English title (may be null)"
