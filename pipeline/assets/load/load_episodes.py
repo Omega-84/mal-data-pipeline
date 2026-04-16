@@ -1,10 +1,55 @@
-""" @bruin
+"""@bruin
+
 name: load.load_episodes
-type: python
-description: "Load episode JSONs from GCS into BigQuery raw table (exploded to one row per episode)"
+description: |
+  Loads episode-level data from GCS JSON files into BigQuery raw episodes table.
+
+  Reads JSON files uploaded by fetch_episodes (format: episodes/anime_{anime_id}.json)
+  and explodes the episodes array so each episode becomes a separate row in the raw_episodes
+  table. This transformation enables episode-level analytics and simplifies downstream
+  SQL transformations in the staging and mart layers.
+
+  The load operation uses WRITE_TRUNCATE with schema autodetect to fully refresh the
+  raw_episodes table on each run. This approach ensures data consistency and handles
+  schema evolution from the upstream Jikan API.
+
+  Each source JSON contains an anime_id and an episodes array. The exploding process
+  combines the anime_id with each episode object, creating denormalized rows ready
+  for BigQuery analytics workloads.
+
 depends:
   - ingest.fetch_episodes
-@bruin """
+
+tags:
+  - domain:entertainment
+  - data_type:fact_table
+  - pipeline_role:raw
+  - sensitivity:public
+  - update_pattern:full_refresh
+  - source:jikan_api
+
+columns:
+  - name: anime_id
+    type: integer
+    description: MyAnimeList anime identifier, foreign key to dim_anime seed and staging tables
+    checks:
+      - name: not_null
+  - name: episode_id
+    type: integer
+    description: MyAnimeList episode identifier (mal_id), unique identifier for individual episodes
+    checks:
+      - name: not_null
+  - name: title
+    type: string
+    description: Episode title as provided by MyAnimeList, may be in Japanese, English, or romaji depending on anime
+  - name: score
+    type: float
+    description: Community rating score for this specific episode on a 0.0-10.0 scale, null for episodes without ratings
+  - name: filler
+    type: boolean
+    description: True if episode is filler content (not canon to main storyline), false for canon episodes, may be null for unknown
+
+@bruin"""
 
 import json, os, sys
 from google.cloud import storage, bigquery

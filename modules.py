@@ -45,11 +45,37 @@ def get_anime_data(anime_id: int) -> Dict:
         dct["image_url"] = data["images"]["jpg"]["large_image_url"]
         dct["airing_start"] = data["aired"].get("from")
         dct["airing_end"] = data["aired"].get("to")
-        dct["studios"] = ", ".join(s["name"] for s in data.get("studios", []))
-        dct["genres"] = ", ".join(g["name"] for g in data.get("genres", []))
-        dct["anime_type"] = data.get("type")
+        dct["studios"]      = ", ".join(s["name"] for s in data.get("studios", []))
+        dct["genres"]       = ", ".join(g["name"] for g in data.get("genres", []))
+        dct["themes"]       = ", ".join(t["name"] for t in data.get("themes", []))
+        dct["anime_type"]   = data.get("type")
+        dct["source"]       = data.get("source")
         dct["demographics"] = ", ".join(d["name"] for d in data.get("demographics", []))
         return dct
+    except Exception:
+        return {}
+
+
+def get_anime_statistics(anime_id: int) -> Dict:
+    result = _get(f"{BASE_URL}anime/{anime_id}/statistics")
+    if not result:
+        return {}
+    try:
+        data = result["data"]
+        row = {
+            "anime_id":       anime_id,
+            "watching":       data.get("watching"),
+            "completed":      data.get("completed"),
+            "on_hold":        data.get("on_hold"),
+            "dropped":        data.get("dropped"),
+            "plan_to_watch":  data.get("plan_to_watch"),
+            "total":          data.get("total"),
+        }
+        for s in data.get("scores", []):
+            n = s["score"]
+            row[f"score_{n}_votes"] = s["votes"]
+            row[f"score_{n}_pct"]   = s["percentage"]
+        return row
     except Exception:
         return {}
 

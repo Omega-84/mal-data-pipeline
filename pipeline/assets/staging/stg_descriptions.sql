@@ -21,10 +21,12 @@ SELECT
     CAST(year            AS INT64)     AS year,
     rating,
     image_url,
-    TIMESTAMP(REPLACE(airing_start, '+00:00', ''))  AS airing_start,
-    TIMESTAMP(REPLACE(airing_end,   '+00:00', ''))  AS airing_end,
+    CAST(airing_start AS TIMESTAMP)                  AS airing_start,
+    CAST(airing_end   AS TIMESTAMP)                  AS airing_end,
     studios,
     genres,
+    themes,
     anime_type,
+    source,
     demographics
 FROM `de-zoomcamp-485104.mal_pipeline.raw_descriptions`

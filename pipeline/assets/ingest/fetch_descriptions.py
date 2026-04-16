@@ -1,8 +1,9 @@
-""" @bruin
+"""@bruin
+
 name: ingest.fetch_descriptions
-type: python
-description: "Fetch anime metadata from Jikan API and upload as JSON to GCS"
-@bruin """
+description: Fetch anime metadata from Jikan API and upload as JSON to GCS
+
+@bruin"""
 
 import csv, json, os, sys, time
 from concurrent.futures import ThreadPoolExecutor, as_completed

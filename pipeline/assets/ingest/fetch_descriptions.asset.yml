@@ -1,0 +1,143 @@
+name: ingest.fetch_anime_descriptions
+type: python
+description: |
+  Fetches comprehensive anime metadata from the Jikan API (MyAnimeList) for a curated set of popular anime
+  and uploads the data as JSON files to Google Cloud Storage. This asset serves as the primary ingestion
+  point for anime description data in the pipeline, extracting rich metadata including titles, ratings,
+  genres, studios, and synopsis information.
+
+  The asset processes anime IDs from the dim_anime.csv seed file (top ~250 popular anime) and makes
+  concurrent API calls to the Jikan v4 /anime/{id}/full endpoint. Each successful response is stored
+  as a structured JSON file in the GCS bucket under the "descriptions/" prefix.
+
+  Key characteristics:
+  - Idempotent: Skips already-uploaded files to support incremental runs
+  - Rate-limited: Respects Jikan API limits with 0.4s delays between requests
+  - Fault-tolerant: Uses ThreadPoolExecutor with retry logic for failed requests
+  - Structured output: Normalizes API response into consistent JSON schema
+
+  This data feeds downstream into the raw_descriptions BigQuery table and ultimately powers
+  the anime recommendation system through the staging and mart layers.
+
+connection: google_cloud_platform
+
+columns:
+  - name: anime_id
+    type: INTEGER
+    description: Unique MyAnimeList identifier for the anime (primary key)
+    checks:
+      - name: not_null
+      - name: unique
+
+  - name: title
+    type: STRING
+    description: Primary title of the anime (typically in Japanese romanized form)
+    checks:
+      - name: not_null
+
+  - name: title_english
+    type: STRING
+    description: Official English localized title, may be null for anime without English releases
+
+  - name: title_japanese
+    type: STRING
+    description: Original Japanese title in Japanese characters (kanji/hiragana/katakana)
+
+  - name: status
+    type: STRING
+    description: Current airing status of the anime
+
+  - name: airing
+    type: BOOLEAN
+    description: Boolean flag indicating if the anime is currently broadcasting new episodes
+
+  - name: score
+    type: FLOAT
+    description: Community rating score on MyAnimeList (0.0-10.0 scale, null if insufficient votes)
+    checks:
+      - name: gte
+        value: 0.0
+      - name: lte
+        value: 10.0
+
+  - name: rank
+    type: INTEGER
+    description: Current ranking position on MyAnimeList based on score (lower number = higher rank)
+    checks:
+      - name: gte
+        value: 1
+
+  - name: popularity
+    type: INTEGER
+    description: Popularity ranking based on number of members who added this anime to their list
+    checks:
+      - name: gte
+        value: 1
+
+  - name: synopsis
+    type: STRING
+    description: Plot summary and description text for the anime, may contain spoilers
+
+  - name: year
+    type: INTEGER
+    description: Year the anime first aired or was released
+    checks:
+      - name: gte
+        value: 1900
+      - name: lte
+        value: 2030
+
+  - name: rating
+    type: STRING
+    description: Content rating/age classification (G, PG, PG-13, R, etc.)
+
+  - name: image_url
+    type: STRING
+    description: URL to the large poster/cover image from MyAnimeList CDN
+    checks:
+      - name: not_null
+
+  - name: airing_start
+    type: STRING
+    description: ISO timestamp when the anime first aired/was released (stored as string, parsed downstream)
+
+  - name: airing_end
+    type: STRING
+    description: ISO timestamp when the anime finished airing (null for ongoing/TBA series)
+
+  - name: studios
+    type: STRING
+    description: Comma-separated list of animation studios that produced the anime
+
+  - name: genres
+    type: STRING
+    description: Comma-separated list of genre classifications (Action, Comedy, Drama, etc.)
+
+  - name: themes
+    type: STRING
+    description: Comma-separated list of thematic tags (School, Military, Supernatural, etc.)
+
+  - name: anime_type
+    type: STRING
+    description: Format type of the anime
+
+  - name: source
+    type: STRING
+    description: Source material the anime was adapted from (Manga, Light Novel, Original, etc.)
+
+  - name: demographics
+    type: STRING
+    description: Comma-separated target demographic classifications (Shounen, Seinen, Josei, etc.)
+
+tags:
+  - domain:entertainment
+  - domain:media
+  - data_type:external_source
+  - data_type:api_ingestion
+  - pipeline_role:raw
+  - sensitivity:public
+  - update_pattern:append_only
+  - source_system:jikan_api
+  - source_system:myanimelist
+  - freshness:daily
+

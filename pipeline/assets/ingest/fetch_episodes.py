@@ -1,8 +1,55 @@
-""" @bruin
+"""@bruin
+
 name: ingest.fetch_episodes
-type: python
-description: "Fetch episode data (with filler flags) from Jikan API and upload as JSON to GCS"
-@bruin """
+description: |
+  Ingests episode-level metadata from MyAnimeList via Jikan API for the top 250 anime.
+
+  Fetches comprehensive episode data including title, score, and filler episode flags
+  from the Jikan API (MyAnimeList's public API). Data is paginated per anime and
+  uploaded as JSON objects to GCS with idempotent behavior (skips existing files).
+
+  This asset serves as the first stage in the episode data pipeline, creating raw
+  JSON files that are later loaded into BigQuery and transformed into structured
+  episode analytics tables.
+
+  Rate-limited to 2 concurrent workers with 0.4s delays between paginated requests
+  to respect Jikan API limits. Episodes are fetched for all anime IDs from the
+  dim_anime seed file (top 250 by popularity).
+
+  Output files: episodes/anime_{anime_id}.json in GCS bucket
+tags:
+  - domain:entertainment
+  - data_type:external_source
+  - pipeline_role:raw
+  - sensitivity:public
+  - update_pattern:idempotent
+  - source:jikan_api
+
+columns:
+  - name: anime_id
+    type: integer
+    description: MyAnimeList anime identifier, links to dim_anime seed
+    checks:
+      - name: not_null
+  - name: episodes
+    type: array
+    description: Array of episode objects for this anime
+    checks:
+      - name: not_null
+  - name: episodes.episode_id
+    type: integer
+    description: MyAnimeList episode identifier (mal_id)
+  - name: episodes.title
+    type: string
+    description: Episode title, may be in Japanese or English
+  - name: episodes.score
+    type: float
+    description: Community rating score for this specific episode (0.0-10.0)
+  - name: episodes.filler
+    type: boolean
+    description: True if episode is filler content (not canon to main story)
+
+@bruin"""
 
 import csv, json, os, sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
