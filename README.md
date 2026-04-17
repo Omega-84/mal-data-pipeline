@@ -1,11 +1,23 @@
 <p align="center">
-  <img src="logo.png" alt="OtakuLens Logo" width="180"/>
+  <img src="img/logo.png" alt="OtakuLens Logo" width="180"/>
 </p>
 
 <h1 align="center">OtakuLens — Anime Analytics Pipeline</h1>
 
 <p align="center">
-  End-to-end data engineering project ingesting anime metadata from <a href="https://myanimelist.net/">MyAnimeList</a>, transforming it through a multi-layer <a href="https://getbruin.com/">Bruin</a> ELT pipeline, storing it in BigQuery, and serving interactive analytics — complete with <strong>semantic anime recommendations</strong> powered by sentence embeddings.
+  Real-time anime intelligence — ingesting metadata for <strong>500+ titles</strong> from MyAnimeList, transforming it through a production-grade ELT pipeline, and serving interactive analytics with <strong>semantic recommendations</strong> powered by sentence embeddings.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Bruin-000000?style=for-the-badge&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Google%20Cloud-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white"/>
+  <img src="https://img.shields.io/badge/BigQuery-669DF6?style=for-the-badge&logo=googlebigquery&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Cloud%20Storage-AECBFA?style=for-the-badge&logo=googlecloudstorage&logoColor=black"/>
+  <img src="https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white"/>
+  <img src="https://img.shields.io/badge/DuckDB-FFF000?style=for-the-badge&logo=duckdb&logoColor=black"/>
+  <img src="https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white"/>
+  <img src="https://img.shields.io/badge/uv-DE5FE9?style=for-the-badge&logo=astral&logoColor=white"/>
 </p>
 
 <p align="center">
@@ -18,6 +30,22 @@
 
 ---
 
+## 💡 About the Project
+
+**OtakuLens** is an end-to-end data engineering project built as a capstone for the [DataTalks.Club DE Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp) and submitted to the [Bruin Data Engineering Competition](https://getbruin.com/competition/).
+
+**Objective:** Build a fully reproducible, cloud-native pipeline that collects anime metadata from the [Jikan API](https://jikan.moe/) (the unofficial MyAnimeList REST API), transforms it through a multi-layer ELT process using Bruin, and surfaces actionable insights through an interactive Streamlit dashboard — including content-based anime recommendations driven by semantic similarity.
+
+The project demonstrates:
+- **Cloud infrastructure as code** — GCS + BigQuery provisioned via Terraform
+- **Orchestrated ELT** — Bruin pipeline with a `@daily` schedule and full DAG dependency management
+- **Layered transformations** — staging → intermediate → mart with partitioning and clustering
+- **AI-powered analysis** — Bruin AI data analyst (MCP + Claude Code) querying real pipeline data
+- **Semantic recommendations** — `sentence-transformers` embeddings over synopsis, genres, themes, and studio
+- **Offline resilience** — automatic DuckDB fallback when BigQuery is unavailable
+
+---
+
 ### 🔗 Project Links
 
 | Resource | URL |
@@ -27,7 +55,7 @@
 
 ---
 
-![Infographic](infographic.png)
+![Infographic](img/infographic.png)
 
 ---
 
@@ -54,23 +82,11 @@ Google Cloud Storage  ◄── Bruin ingest assets (idempotent, rate-limited)
 
 ### Pipeline Lineage
 
-![Pipeline Lineage](lineage.png)
+![Pipeline Lineage](img/lineage.png)
 
 ---
 
 ## 🛠️ Tech Stack
-
-<p align="left">
-  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Bruin-000000?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyeiIvPjwvc3ZnPg==&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Google%20Cloud-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white"/>
-  <img src="https://img.shields.io/badge/BigQuery-669DF6?style=for-the-badge&logo=googlebigquery&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Cloud%20Storage-AECBFA?style=for-the-badge&logo=googlecloudstorage&logoColor=black"/>
-  <img src="https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white"/>
-  <img src="https://img.shields.io/badge/DuckDB-FFF000?style=for-the-badge&logo=duckdb&logoColor=black"/>
-  <img src="https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white"/>
-  <img src="https://img.shields.io/badge/uv-DE5FE9?style=for-the-badge&logo=astral&logoColor=white"/>
-</p>
 
 | Layer | Tool |
 |---|---|
