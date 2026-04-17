@@ -5,7 +5,7 @@
 <h1 align="center">OtakuLens — Anime Analytics Pipeline</h1>
 
 <p align="center">
-  Real-time anime intelligence — ingesting metadata for <strong>500+ titles</strong> from MyAnimeList, transforming it through a production-grade ELT pipeline, and serving interactive analytics with <strong>semantic recommendations</strong> powered by sentence embeddings.
+  End-to-end anime intelligence — ingesting metadata for <strong>500+ titles</strong> from MyAnimeList, transforming it through a production-grade batch ELT pipeline, and serving interactive analytics with <strong>semantic recommendations</strong> powered by sentence embeddings.
 </p>
 
 <p align="center">
@@ -55,7 +55,9 @@ The project demonstrates:
 
 ---
 
-![Infographic](img/infographic.png)
+<p align="center">
+  <img src="img/infographic.png" alt="OtakuLens Infographic"/>
+</p>
 
 ---
 
@@ -313,7 +315,7 @@ No credential files are committed — credentials are read via `st.secrets["gcp_
 - BigQuery clients use `bigquery.Client()` — project inferred from service account
 - SQL assets use 2-part table names (`` `mal_pipeline.table` ``) — project from Bruin connection
 - Gitignored: `.bruin.yml`, `terraform.tfvars`, `.env`, `*.json`, `.streamlit/secrets.toml`
-- Templates committed: `.env.example`, `terraform.tfvars.example`, `secrets.toml.example`
+- Templates committed: `.env.example`, `terraform/terraform.tfvars.example`, `.streamlit/secrets.toml.example`
 
 ---
 
@@ -334,12 +336,12 @@ mal-data-pipeline/
 ├── scripts/
 │   ├── generate_seed.py               # fetch top 500 → dim_anime.csv
 │   └── export_to_duckdb.py            # snapshot BQ → data/mal.duckdb
-├── data/mal.duckdb                    # committed DuckDB snapshot (BQ fallback)
-├── terraform/                         # GCS + BigQuery provisioning
-├── infographic.png                    # project overview infographic
-├── .env.example                       # env var template
-├── .streamlit/secrets.toml.example    # Streamlit secrets template
-└── terraform/terraform.tfvars.example # Terraform vars template
+├── data/mal.duckdb                         # committed DuckDB snapshot (BQ fallback)
+├── terraform/                              # GCS + BigQuery provisioning
+│   └── terraform.tfvars.example           # Terraform vars template
+├── img/                                    # logo, infographic, lineage images
+├── .env.example                            # env var template
+└── .streamlit/secrets.toml.example        # Streamlit secrets template
 ```
 
 ---
