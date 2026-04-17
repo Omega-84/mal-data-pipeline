@@ -1,189 +1,157 @@
-# OtakuLens — MAL Anime Data Pipeline
+# 🔍 OtakuLens — Anime Analytics Pipeline
 
-> An end-to-end data engineering project that ingests anime metadata from the [MyAnimeList](https://myanimelist.net/) unofficial API ([Jikan](https://jikan.moe/)), transforms it using [Bruin](https://getbruin.com/) ELT, stores it in BigQuery, and serves interactive analytics through **OtakuLens** — a Streamlit dashboard with semantic anime recommendations.
+> End-to-end data engineering project that ingests anime metadata from [MyAnimeList](https://myanimelist.net/), transforms it through a multi-layer [Bruin](https://getbruin.com/) ELT pipeline, stores it in BigQuery, and serves interactive analytics through a Streamlit dashboard — complete with **semantic anime recommendations** powered by sentence embeddings.
 
-Built as a capstone for [DataTalks.Club DE Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp) and submitted to the [Bruin Data Engineering Competition](https://getbruin.com/competition/).
+**🚀 [Live Demo](https://mal-data-pipeline-zprefllqfdr4htgqq6ggdq.streamlit.app/)** &nbsp;|&nbsp; Built for [DataTalks.Club DE Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp) &nbsp;|&nbsp; Submitted to the [Bruin Data Engineering Competition](https://getbruin.com/competition/)
 
 ---
 
-## Architecture
+![Infographic](infographic.png)
+
+---
+
+## 🏗️ Architecture
 
 ```
 Jikan API (MyAnimeList)
         │
         ▼
-Google Cloud Storage   ←── Bruin Python ingest assets (idempotent)
-   (Raw JSON files)
+Google Cloud Storage  ◄── Bruin ingest assets (idempotent, rate-limited)
+   Raw JSON files
         │
         ▼
-Bruin ELT Pipeline
-  ├── Load      (GCS JSON → BigQuery raw tables, WRITE_TRUNCATE)
-  ├── Staging   (raw → typed views)
-  ├── Intermediate (joins + aggregations)
-  └── Mart      (partitioned + clustered final tables)
+  Bruin ELT Pipeline
+  ├── Load         GCS JSON → BigQuery raw tables (WRITE_TRUNCATE)
+  ├── Staging      raw → typed views
+  ├── Intermediate joins + aggregations
+  └── Mart         partitioned + clustered final tables
         │
-        ├──▶ BigQuery (data warehouse)
-        │         │
+        ├──▶ BigQuery (primary)
         │         └──▶ OtakuLens Dashboard (Streamlit)
-        │
-        └──▶ DuckDB (local snapshot — dashboard fallback when BQ is offline)
+        └──▶ DuckDB (local fallback — auto-detected)
 ```
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Layer | Tool |
 |---|---|
-| Source | [Jikan API v4](https://docs.api.jikan.moe/) (MyAnimeList, no auth) |
+| Source | [Jikan API v4](https://docs.api.jikan.moe/) — MyAnimeList, no auth |
 | Raw Storage | Google Cloud Storage |
-| ELT Orchestration | [Bruin](https://getbruin.com/) (`@daily` schedule) |
-| Data Warehouse | BigQuery (partitioned + clustered) |
+| ELT + Orchestration | [Bruin](https://getbruin.com/) (`@daily` schedule) |
+| Data Warehouse | BigQuery — partitioned + clustered |
 | AI Analysis | Bruin AI data analyst (MCP + Claude Code) |
+| Recommendations | `sentence-transformers` `all-MiniLM-L6-v2` |
+| Dashboard | Streamlit |
 | Local Fallback | DuckDB |
-| Dashboard | Streamlit (OtakuLens) |
-| Recommendations | `sentence-transformers` (`all-MiniLM-L6-v2`) |
-| Infrastructure | Terraform (GCP) |
-| Dependency Management | `uv` |
+| Infrastructure | Terraform |
+| Package Management | `uv` |
 
 ---
 
-## Dataset
+## 📊 Dataset
 
-Top 500 anime by popularity sourced from [MyAnimeList](https://myanimelist.net/) via [Jikan API v4](https://docs.api.jikan.moe/):
+Top **500 anime** by popularity from MyAnimeList via Jikan API:
 
-| Data | Fields |
+| Data | Details |
 |---|---|
-| Core metadata | title (EN/JP), type, status, score, rank, popularity, content rating |
-| Temporal | airing start/end dates, year, season |
-| Classification | genres (up to 3), themes (up to 2), demographics, source material |
-| Studios | production studios (comma-separated) |
-| Synopsis | plot summary (used for semantic recommendations) |
+| Core metadata | title, type, status, score, rank, popularity, rating |
+| Classification | genres (up to 3), themes (up to 2), demographics, source |
+| Temporal | airing start/end, year, season |
 | Episodes | title, score, filler flag — per episode |
-| User engagement | watching, completed, on hold, dropped, plan to watch |
-| Score distribution | vote counts and percentages for scores 1–10 |
+| Engagement | watching, completed, on-hold, dropped, plan-to-watch |
+| Score dist. | vote counts + percentages for scores 1–10 |
 | Characters | main character names and images |
 
-**Scale:** ~500 anime · ~10,000+ episodes · ~2,000+ characters
+**~500 anime · ~10,000+ episodes · ~2,000+ characters**
 
 ---
 
-## Pipeline Structure
+## 🔄 Pipeline Structure
 
 ```
 pipeline/
-├── pipeline.yml                  # @daily schedule, default connections
+├── pipeline.yml                  # @daily schedule, gcp-default connection
 └── assets/
-    ├── seeds/
-    │   ├── dim_anime.csv         # top 500 anime IDs (generated by scripts/generate_seed.py)
-    │   └── dim_anime.asset.yml   # seed asset definition
-    ├── ingest/
-    │   ├── fetch_descriptions.py # Jikan /anime/{id}/full → GCS descriptions/
-    │   ├── fetch_characters.py   # Jikan /anime/{id}/characters → GCS characters/
-    │   ├── fetch_episodes.py     # Jikan /anime/{id}/episodes (paginated) → GCS episodes/
-    │   └── fetch_statistics.py   # Jikan /anime/{id}/statistics → GCS statistics/
-    ├── load/
-    │   ├── load_descriptions.py  # GCS descriptions/ → BQ raw_descriptions
-    │   ├── load_characters.py    # GCS characters/ → BQ raw_characters
-    │   ├── load_episodes.py      # GCS episodes/ → BQ raw_episodes
-    │   └── load_statistics.py    # GCS statistics/ → BQ raw_statistics
-    ├── staging/
-    │   ├── stg_descriptions.sql  # typed columns, parsed timestamps
-    │   ├── stg_characters.sql    # typed IDs
-    │   ├── stg_episodes.sql      # typed IDs, filler bool
-    │   └── stg_statistics.sql    # engagement counts, score percentages
-    ├── intermediate/
-    │   ├── int_episode_agg.sql   # per-anime: episode count, avg score, filler %, best ep
-    │   └── int_anime_base.sql    # wide join: descriptions + statistics + episode aggs
-    └── mart/
-        ├── mart_anime.sql        # partitioned by airing year, clustered by genre_1
-        ├── mart_episodes.sql     # episodes + anime title
-        └── mart_characters.sql   # characters + anime title
+    ├── seeds/         dim_anime.csv — top 500 anime IDs
+    ├── ingest/        fetch_*.py — Jikan API → GCS (idempotent)
+    ├── load/          load_*.py — GCS → BQ raw tables (WRITE_TRUNCATE)
+    ├── staging/       stg_*.sql — typed views
+    ├── intermediate/  int_*.sql — joins + aggregations
+    └── mart/          mart_*.sql — partitioned + clustered
 ```
 
-### Layer details
+**Run order:** `seeds → ingest → load → staging → intermediate → mart`
 
-**Seeds** — `dim_anime.csv` contains the top 500 anime IDs from MyAnimeList. Regenerate with:
-```bash
-python scripts/generate_seed.py
-```
+### Transformation layers
 
-**Ingest** — Python assets fetch from Jikan API and upload raw JSON to GCS. All assets are idempotent (skip existing blobs). Rate limiting: `ThreadPoolExecutor` (max 3 workers) + `time.sleep(0.4)` per request.
+**Staging** — SQL views that cast raw columns to correct types, parse timestamps, and extract structured fields. No data movement.
 
-**Load** — Python assets read raw JSON from GCS and load into BigQuery raw tables using `WRITE_TRUNCATE` (full refresh) with autodetect schema.
+**Intermediate**
+- `int_episode_agg` — per-anime: episode count, avg score, filler %, best episode title/score
+- `int_anime_base` — wide join of descriptions + statistics + episode aggregates; splits genres (max 3) and themes (max 2)
 
-**Staging** — SQL views that cast and clean raw tables. No data movement, just typed column definitions.
-
-**Intermediate** — SQL tables:
-- `int_episode_agg`: per-anime episode aggregates (count, avg score, filler %, best episode title/score)
-- `int_anime_base`: wide join of descriptions + statistics + episode aggregates, splits genres (max 3) and themes (max 2) into individual columns
-
-**Mart** — Final consumption tables:
-- `mart_anime`: partitioned by `TIMESTAMP_TRUNC(airing_start, YEAR)`, clustered by `genre_1`
-- `mart_episodes`: episodes with anime title joined in
-- `mart_characters`: characters with anime title joined in
+**Mart**
+- `mart_anime` — partitioned by `TIMESTAMP_TRUNC(airing_start, YEAR)`, clustered by `genre_1`
+- `mart_episodes` — episodes with anime title
+- `mart_characters` — characters with anime title
 
 All intermediate and mart assets have AI-generated descriptions and column-level quality checks via `bruin ai enhance`.
 
 ---
 
-## OtakuLens Dashboard
+## 🎌 OtakuLens Dashboard
 
-A dark-gold themed Streamlit dashboard for exploring anime analytics.
+**[→ Open Live App](https://mal-data-pipeline-zprefllqfdr4htgqq6ggdq.streamlit.app/)**
 
-**Features:**
-- **Anime selector** with dynamic filtering by genre, theme, studio, and media type
-- **Scorecards**: MAL score, popularity rank, episode count, completion rate, best episode
-- **Airing status badge** with live/finished indicator
-- **Character grid**: top 12 main characters with images, sorted by character ID
-- **Viewer engagement chart**: watching / completed / on-hold / dropped / plan-to-watch
-- **Episode timeline** (TV/ONA only): score per episode with canon vs filler distinction
-- **Filler breakdown**: donut chart with canon/filler percentages
-- **Score distribution**: histogram with average score trend line
-- **Semantic recommendations**: 6 similar anime powered by `sentence-transformers` (synopsis + genres/themes/studio, same media type, same-series filtered)
+Dark-gold themed Streamlit dashboard with:
 
-**Backends:**
-- Tries BigQuery first (live data)
-- Falls back to local `data/mal.duckdb` automatically if BigQuery is unavailable
+- **Dynamic filters** — genre, theme, studio, media type (all cross-reactive)
+- **Scorecards** — MAL score, popularity rank, episodes, completion rate, best episode
+- **Airing status badge** — live / finished indicator
+- **Character grid** — top 12 main characters with images
+- **Viewer engagement** — watching / completed / on-hold / dropped / plan-to-watch
+- **Episode timeline** *(TV/ONA)* — score per episode, canon vs filler
+- **Filler breakdown** *(TV/ONA)* — donut chart with percentages
+- **Score distribution** — histogram with average trend line
+- **Semantic recommendations** — 6 similar anime via sentence embeddings (synopsis + genres/themes/studio, same media type, same-series filtered)
+
+Automatically falls back to local DuckDB when BigQuery is unavailable.
 
 ---
 
-## Bruin AI Data Analyst
+## 🤖 Bruin AI Data Analyst
 
-This project uses the **Bruin AI data analyst** (Bruin MCP + Claude Code) to answer business questions directly against the pipeline data.
+This project uses the **Bruin AI data analyst** (Bruin MCP + Claude Code) to answer business questions directly against the pipeline data — no guessing schemas, always executing against real data.
 
-The analyst is configured in `ai_data_analyst/prompt.txt`:
+System prompt in `ai_data_analyst/prompt.txt`.
 
-> *You are an expert Data Analyst. Your job is to answer questions about our datasets by actively using the Bruin MCP and the Bruin CLI. Never guess schemas. Always use the Bruin MCP tools to inspect table structures before writing SQL. Execute to verify. Use the Bruin CLI to run the SQL queries against the database and fetch the real data. Summarize. Analyze the query results and provide a clear, direct answer to the user based only on the actual data returned.*
-
-**Sample analyses run against the pipeline:**
+**Sample analyses:**
 
 **Q1 — Which genres dominate the top 500?**
+![Genre analysis](ai_data_analyst/Q1.png)
 
-![Genre distribution analysis](ai_data_analyst/Q1.png)
-
-**Q2 — What is the relationship between score and popularity?**
-
+**Q2 — Relationship between score and popularity?**
 ![Score vs popularity](ai_data_analyst/Q2.png)
 
 **Q3 — How does filler content vary across studios?**
-
-![Filler analysis by studio](ai_data_analyst/Q3.png)
+![Filler by studio](ai_data_analyst/Q3.png)
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
 - Python 3.13+
-- GCP project with BigQuery and GCS APIs enabled
-- Service account JSON key with **BigQuery Data Editor** + **GCS Object Admin** roles
-- [`uv`](https://github.com/astral-sh/uv) installed: `pip install uv`
+- GCP project with BigQuery + GCS APIs enabled
+- Service account JSON with **BigQuery Data Editor** + **GCS Object Admin** roles
+- [`uv`](https://github.com/astral-sh/uv): `pip install uv`
 - [Bruin CLI](https://getbruin.com/docs/getting-started/introduction/): `curl -LO https://raw.githubusercontent.com/bruin-data/bruin/main/install.sh && bash install.sh`
-- [Terraform](https://developer.hashicorp.com/terraform/install) (for infra provisioning)
+- [Terraform](https://developer.hashicorp.com/terraform/install)
 
-### 1. Install dependencies
+### 1. Clone & install
 
 ```bash
 git clone https://github.com/Omega-84/mal-data-pipeline.git
@@ -192,17 +160,17 @@ uv sync
 source .venv/bin/activate
 ```
 
-### 2. Set environment variables
+### 2. Environment variables
 
 ```bash
 cp .env.example .env
-# Edit .env and set: GCP_PROJECT_ID=your-gcp-project-id
+# set GCP_PROJECT_ID=your-gcp-project-id
 export $(cat .env | xargs)
 ```
 
-### 3. Configure Bruin connection
+### 3. Configure Bruin
 
-Create `.bruin.yml` in the project root (this file is gitignored):
+Create `.bruin.yml` (gitignored) in the project root:
 
 ```yaml
 environments:
@@ -215,33 +183,30 @@ environments:
           location: US
 ```
 
-Verify:
 ```bash
 bruin connections test --name gcp-default
 ```
 
-### 4. Provision GCP infrastructure
+### 4. Provision infrastructure
 
 ```bash
 cd terraform
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars — set project_id and credentials_file path
-terraform init
-terraform apply
+cp terraform.tfvars.example terraform.tfvars   # fill in project_id + credentials_file
+terraform init && terraform apply
 cd ..
 ```
 
-This creates:
-- GCS bucket `jikan_anime_data_bucket` (with 90-day lifecycle rule)
-- BigQuery dataset `mal_pipeline` in US multi-region
+Creates: GCS bucket + BigQuery dataset `mal_pipeline` (US multi-region).
 
 ### 5. Run the pipeline
 
 ```bash
-# Full pipeline (DAG-ordered automatically by Bruin)
 bruin run pipeline/
+```
 
-# Or run layers individually in order:
+Or layer by layer:
+
+```bash
 bruin run pipeline/assets/seeds/
 bruin run pipeline/assets/ingest/
 bruin run pipeline/assets/load/
@@ -250,32 +215,27 @@ bruin run pipeline/assets/intermediate/
 bruin run pipeline/assets/mart/
 ```
 
-### 6. Launch the dashboard
+### 6. Launch dashboard
 
 ```bash
 streamlit run dashboard/app.py
 ```
 
-Open `http://localhost:8501`
-
 ### Local-only (no GCP)
 
-The dashboard falls back to `data/mal.duckdb` automatically when BigQuery is unreachable. The DuckDB snapshot is included in the repo.
+The dashboard falls back to `data/mal.duckdb` automatically — no setup needed. To refresh the snapshot:
 
-To refresh the snapshot before tearing down GCP:
 ```bash
 python scripts/export_to_duckdb.py
 ```
 
 ---
 
-## Streamlit Cloud Deployment
+## ☁️ Streamlit Cloud Deployment
 
-Deploy to [Streamlit Cloud](https://streamlit.io/cloud) without committing any credentials:
-
-1. Push the repo to GitHub
-2. Create a new app in Streamlit Cloud pointing to `dashboard/app.py`
-3. Under **App Settings → Secrets**, add:
+1. Push repo to GitHub
+2. Create app at [streamlit.io/cloud](https://streamlit.io/cloud) pointing to `dashboard/app.py`
+3. Under **App Settings → Secrets**, add (see `.streamlit/secrets.toml.example` for full template):
 
 ```toml
 GCP_PROJECT_ID = "your-gcp-project-id"
@@ -283,83 +243,74 @@ GCP_PROJECT_ID = "your-gcp-project-id"
 [gcp_service_account]
 type = "service_account"
 project_id = "your-gcp-project-id"
-private_key_id = "your-key-id"
-private_key = "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----\n"
+private_key_id = "..."
+private_key = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 client_email = "your-sa@your-project.iam.gserviceaccount.com"
-client_id = "your-client-id"
-auth_uri = "https://accounts.google.com/o/oauth2/auth"
-token_uri = "https://oauth2.googleapis.com/token"
-auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
-client_x509_cert_url = "https://www.googleapis.com/robot/v1/metadata/x509/your-sa%40your-project.iam.gserviceaccount.com"
+# ... (see .streamlit/secrets.toml.example)
 ```
 
-See `.streamlit/secrets.toml.example` for the full template.
-
-The dashboard reads credentials via `st.secrets["gcp_service_account"]` — no credential files are committed.
+No credential files are committed — credentials are read via `st.secrets["gcp_service_account"]`.
 
 ---
 
-## Reproducibility Notes
+## 🔐 Reproducibility
 
-- No credentials or project IDs are hardcoded anywhere in the source
-- `GCP_PROJECT_ID` is read from the `GCP_PROJECT_ID` environment variable (dashboard + export script)
-- BigQuery Python clients in load assets use `bigquery.Client()` — project is inferred from service account credentials
-- All SQL assets use 2-part table names (`` `mal_pipeline.table` ``) — project resolved from the Bruin connection
-- `.bruin.yml`, `terraform.tfvars`, `.env`, `*.json`, and `.streamlit/secrets.toml` are all gitignored
+- No credentials or project IDs hardcoded anywhere in source
+- `GCP_PROJECT_ID` read from env var — set once, works everywhere
+- BigQuery clients use `bigquery.Client()` — project inferred from service account
+- SQL assets use 2-part table names (`` `mal_pipeline.table` ``) — project from Bruin connection
+- Gitignored: `.bruin.yml`, `terraform.tfvars`, `.env`, `*.json`, `.streamlit/secrets.toml`
+- Templates committed: `.env.example`, `terraform.tfvars.example`, `secrets.toml.example`
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 mal-data-pipeline/
-├── modules.py                        # Jikan API fetch helper functions
+├── modules.py                         # Jikan API fetch helpers
 ├── pipeline/
-│   ├── pipeline.yml                  # Bruin pipeline config (@daily, gcp-default connection)
-│   └── assets/                       # All Bruin assets (seeds → ingest → load → staging → intermediate → mart)
+│   ├── pipeline.yml                   # @daily schedule, connections
+│   └── assets/                        # seeds → ingest → load → staging → intermediate → mart
 ├── dashboard/
-│   ├── app.py                        # OtakuLens Streamlit dashboard
-│   └── .streamlit/
-│       ├── config.toml               # Streamlit config (dark theme, file watcher)
-│       └── secrets.toml.example      # Template for local + Streamlit Cloud secrets
+│   ├── app.py                         # OtakuLens Streamlit app
+│   └── .streamlit/config.toml         # dark theme, file watcher config
 ├── ai_data_analyst/
-│   ├── prompt.txt                    # System prompt for Bruin AI data analyst
-│   ├── Q1.png                        # Genre distribution analysis screenshot
-│   ├── Q2.png                        # Score vs popularity analysis screenshot
-│   └── Q3.png                        # Filler by studio analysis screenshot
+│   ├── prompt.txt                     # system prompt for Bruin AI analyst
+│   └── Q1.png / Q2.png / Q3.png       # analysis screenshots
 ├── scripts/
-│   ├── generate_seed.py              # Fetch top 500 anime IDs → dim_anime.csv
-│   └── export_to_duckdb.py           # Export BQ mart tables → data/mal.duckdb
-├── data/
-│   └── mal.duckdb                    # Local DuckDB snapshot (committed, BQ fallback)
-├── terraform/
-│   ├── main.tf                       # GCS bucket + BigQuery dataset
-│   ├── variables.tf                  # Input variable definitions
-│   ├── outputs.tf                    # Output values
-│   └── terraform.tfvars.example      # Template — copy to terraform.tfvars
-├── .env.example                      # Template — copy to .env
-├── pyproject.toml                    # uv dependencies
-└── uv.lock                           # Locked dependency versions
+│   ├── generate_seed.py               # fetch top 500 → dim_anime.csv
+│   └── export_to_duckdb.py            # snapshot BQ → data/mal.duckdb
+├── data/mal.duckdb                    # committed DuckDB snapshot (BQ fallback)
+├── terraform/                         # GCS + BigQuery provisioning
+├── infographic.png                    # project overview infographic
+├── .env.example                       # env var template
+├── .streamlit/secrets.toml.example    # Streamlit secrets template
+└── terraform/terraform.tfvars.example # Terraform vars template
 ```
 
 ---
 
-## Bruin Competition
+## 🏆 Competition & Course
 
-This project is submitted to the [Bruin Data Engineering Competition](https://getbruin.com/competition/). Bruin is used for all four required categories:
+### Bruin Data Engineering Competition
+Submitted to [getbruin.com/competition](https://getbruin.com/competition/) — Bruin used for all four required categories:
 
 | Category | How |
 |---|---|
-| **Ingestion** | 4 Python ingest assets fetch from Jikan API → GCS |
-| **Transformation** | Staging → Intermediate → Mart SQL layers with typed columns, joins, aggregations |
-| **Orchestration** | `@daily` schedule in `pipeline.yml`, DAG-driven execution order |
-| **Analysis** | Bruin AI data analyst (MCP + Claude Code) — see `ai_data_analyst/` |
+| Ingestion | 4 Python assets — Jikan API → GCS |
+| Transformation | Staging → Intermediate → Mart SQL layers |
+| Orchestration | `@daily` schedule, DAG-driven execution |
+| Analysis | Bruin AI data analyst — MCP + Claude Code |
+
+### DataTalks.Club DE Zoomcamp
+Capstone project covering: cloud infrastructure, data lake, warehouse (partitioned + clustered), transformations, dashboard, and reproducibility.
 
 ---
 
-## Acknowledgements
+## 🙏 Acknowledgements
 
 - [Jikan](https://jikan.moe/) — Unofficial MyAnimeList REST API
-- [DataTalks.Club DE Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp)
-- [Bruin](https://getbruin.com/) — ELT orchestration and AI analysis
-- [sentence-transformers](https://www.sbert.net/) — Semantic similarity for recommendations
+- [DataTalks.Club](https://datatalks.club/) — DE Zoomcamp
+- [Bruin](https://getbruin.com/) — ELT orchestration + AI analysis
+- [sentence-transformers](https://www.sbert.net/) — Semantic similarity
