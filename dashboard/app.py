@@ -236,7 +236,7 @@ footer { visibility: hidden; }
 .backend-badge {
     position: fixed;
     bottom: 12px;
-    right: 16px;
+    left: 16px;
     background: #12121a;
     border: 1px solid #2a2a3a;
     border-radius: 8px;
