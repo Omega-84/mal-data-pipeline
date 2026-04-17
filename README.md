@@ -145,14 +145,14 @@ System prompt in `ai_data_analyst/prompt.txt`.
 
 **Sample analyses:**
 
-**Q1 — Which genres dominate the top 500?**
-![Genre analysis](ai_data_analyst/Q1.png)
+**Q1 — Give me the 10 most popular sports anime TV series.**
+![Most popular sports anime TV series](ai_data_analyst/Q1.png)
 
-**Q2 — Relationship between score and popularity?**
-![Score vs popularity](ai_data_analyst/Q2.png)
+**Q2 — What are the 3 highest rated One Piece episodes?**
+![Highest rated One Piece episodes](ai_data_analyst/Q2.png)
 
-**Q3 — How does filler content vary across studios?**
-![Filler by studio](ai_data_analyst/Q3.png)
+**Q3 — What studio has the most productions in the top 50 most popular anime?**
+![Studio with most productions in top 50](ai_data_analyst/Q3.png)
 
 ---
 
