@@ -1,22 +1,48 @@
 name: mal_pipeline.dim_anime
 type: bq.seed
-description: "Dimension table — top 250 anime by popularity rank"
+description: |
+  Core dimension table containing 500 popular anime titles from MyAnimeList, serving as the
+  authoritative reference for all pipeline ingestion processes. This curated dataset defines the
+  scope of anime titles processed throughout the ELT pipeline, from initial Jikan API fetching
+  through final mart table generation.
+
+  Acts as the foundational seed that drives all downstream ingestion assets (fetch_descriptions,
+  fetch_characters, fetch_episodes, fetch_statistics) by providing the definitive list of anime_id
+  values to process. The popularity-based selection ensures focus on widely-recognized, culturally
+  significant anime titles that provide the most value for analytics and recommendation systems.
+
+  Data source: MyAnimeList via Jikan API v4, filtered by popularity ranking. This static reference
+  data changes infrequently (typically updated quarterly or when major new popular anime emerge)
+  and represents a stable foundation for the anime recommendation and analytics platform.
+
+  Operational notes: Seed data is loaded once per pipeline run and cached in BigQuery. No incremental
+  updates - full refresh pattern. Expected size remains stable at ~500 records (~50KB).
+tags:
+  - dimension_table
+  - external_source
+  - anime_domain
+  - reference_data
+  - mal_api
+  - seed_data
+  - static_data
+  - popularity_ranked
+  - full_refresh
 
 parameters:
   path: ./dim_anime.csv
 
 columns:
   - name: anime_id
-    type: integer
-    description: "MAL unique identifier"
+    type: INTEGER
+    description: MyAnimeList unique identifier - primary key for anime across all MAL systems and this pipeline. Used as the foreign key throughout staging, intermediate, and mart layers.
     checks:
       - name: not_null
       - name: unique
   - name: title
-    type: string
-    description: "Primary title"
+    type: STRING
+    description: Original Japanese title (romanized) - the canonical primary title as registered on MyAnimeList. Used for display purposes and as fallback when English title is unavailable.
     checks:
       - name: not_null
   - name: title_english
-    type: string
-    description: "English title (may be null)"
+    type: STRING
+    description: Official English localization title when available. May be null for anime without official English releases or translations. Used primarily for English-language dashboard displays and search.

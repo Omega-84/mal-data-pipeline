@@ -12,7 +12,7 @@ from pathlib import Path
 import duckdb
 from google.cloud import bigquery
 
-PROJECT_ID = "de-zoomcamp-485104"
+PROJECT_ID = os.environ["GCP_PROJECT_ID"]
 DATASET = "mal_pipeline"
 DB_PATH = Path(__file__).parent.parent / "data" / "mal.duckdb"
 

@@ -1,0 +1,5 @@
+project_id       = "your-gcp-project-id"
+credentials_file = "/path/to/your-service-account.json"
+region           = "us-central1"
+gcs_bucket_name  = "jikan_anime_data_bucket"
+bq_dataset_id    = "mal_pipeline"

@@ -27,6 +27,8 @@ tags:
   - source:mal_api
   - update_pattern:daily_batch
   - sensitivity:public
+  - quality:high
+  - lineage:core
 
 materialization:
   type: table
@@ -90,6 +92,15 @@ columns:
   - name: anime_type
     type: STRING
     description: Format type (TV, Movie, OVA, ONA, Special, Music)
+    checks:
+      - name: accepted_values
+        value:
+          - TV
+          - Movie
+          - OVA
+          - ONA
+          - Special
+          - Music
   - name: source
     type: STRING
     description: Source material (Manga, Light novel, Original, Game, etc.)
@@ -211,6 +222,6 @@ SELECT
     e.best_episode_title,
     e.best_episode_score
 
-FROM `de-zoomcamp-485104.mal_pipeline.stg_descriptions` d
-LEFT JOIN `de-zoomcamp-485104.mal_pipeline.stg_statistics`   s USING (anime_id)
-LEFT JOIN `de-zoomcamp-485104.mal_pipeline.int_episode_agg`  e USING (anime_id)
+FROM `mal_pipeline.stg_descriptions` d
+LEFT JOIN `mal_pipeline.stg_statistics`   s USING (anime_id)
+LEFT JOIN `mal_pipeline.int_episode_agg`  e USING (anime_id)

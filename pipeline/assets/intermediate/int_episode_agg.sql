@@ -17,6 +17,12 @@ description: |
   - Identifies best-rated episode using ARRAY_AGG with ordering
   - Handles NULL scores gracefully (scored vs total episode counts)
 
+  Operational characteristics:
+  - Cardinality: ~250 records (based on top anime list from Jikan API)
+  - Refresh pattern: Daily batch via Bruin pipeline
+  - Data freshness: Typically within 24h of source API updates
+  - Best episode identification uses IGNORE NULLS to handle unscored episodes
+
   This table serves as a key input for int_anime_base and supports episode-centric analytics.
 tags:
   - domain:entertainment
@@ -27,6 +33,8 @@ tags:
   - aggregation_level:anime
   - update_pattern:daily_batch
   - sensitivity:public
+  - analytics_ready
+  - content_metrics
 
 materialization:
   type: table
@@ -46,19 +54,22 @@ columns:
     description: Total count of episodes available for this anime
     checks:
       - name: not_null
+      - name: positive
   - name: scored_episodes
     type: INTEGER
     description: Count of episodes that have user scores (subset of total_episodes)
     checks:
       - name: not_null
+      - name: non_negative
   - name: avg_episode_score
     type: FLOAT
-    description: Average user score across all scored episodes (1.0-10.0 scale), rounded to 2 decimal places
+    description: Average user score across all scored episodes (0.0-10.0 scale), rounded to 2 decimal places
   - name: filler_count
     type: INTEGER
     description: Number of episodes marked as filler content (non-canon episodes)
     checks:
       - name: not_null
+      - name: non_negative
   - name: filler_pct
     type: FLOAT
     description: Percentage of episodes that are filler content, rounded to 1 decimal place
@@ -66,7 +77,7 @@ columns:
       - name: not_null
   - name: best_episode_score
     type: FLOAT
-    description: Highest user score among all episodes for this anime
+    description: Highest user score among all episodes for this anime (0.0-10.0 scale)
   - name: best_episode_id
     type: INTEGER
     description: Episode identifier of the highest-rated episode for this anime
@@ -96,5 +107,5 @@ SELECT
         ORDER BY score DESC
         LIMIT 1
     )[OFFSET(0)].title                                    AS best_episode_title
-FROM `de-zoomcamp-485104.mal_pipeline.stg_episodes`
+FROM `mal_pipeline.stg_episodes`
 GROUP BY anime_id

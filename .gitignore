@@ -212,6 +212,7 @@ __marimo__/
 *.ipynb
 *.json
 !.mcp.json
+.streamlit/secrets.toml
 
 # Terraform
 terraform/.terraform/
@@ -222,3 +223,4 @@ terraform/terraform.tfvars
 logs/runs
 logs/*.log
 *.py[cod]
+logs/queries

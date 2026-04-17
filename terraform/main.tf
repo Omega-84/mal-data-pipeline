@@ -36,7 +36,7 @@ resource "google_storage_bucket" "raw_data" {
 
 resource "google_bigquery_dataset" "mal_pipeline" {
   dataset_id  = var.bq_dataset_id
-  location    = var.region
+  location    = "US"
   description = "MAL anime pipeline — staging and mart tables"
 
   delete_contents_on_destroy = false
