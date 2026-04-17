@@ -213,6 +213,7 @@ __marimo__/
 *.json
 !.mcp.json
 .streamlit/secrets.toml
+post.txt
 
 # Terraform
 terraform/.terraform/
