@@ -1,8 +1,29 @@
-# 🔍 OtakuLens — Anime Analytics Pipeline
+<p align="center">
+  <img src="logo.png" alt="OtakuLens Logo" width="180"/>
+</p>
 
-> End-to-end data engineering project that ingests anime metadata from [MyAnimeList](https://myanimelist.net/), transforms it through a multi-layer [Bruin](https://getbruin.com/) ELT pipeline, stores it in BigQuery, and serves interactive analytics through a Streamlit dashboard — complete with **semantic anime recommendations** powered by sentence embeddings.
+<h1 align="center">OtakuLens — Anime Analytics Pipeline</h1>
 
-**🚀 [Live Demo](https://mal-data-pipeline-zprefllqfdr4htgqq6ggdq.streamlit.app/)** &nbsp;|&nbsp; Built for [DataTalks.Club DE Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp) &nbsp;|&nbsp; Submitted to the [Bruin Data Engineering Competition](https://getbruin.com/competition/)
+<p align="center">
+  End-to-end data engineering project ingesting anime metadata from <a href="https://myanimelist.net/">MyAnimeList</a>, transforming it through a multi-layer <a href="https://getbruin.com/">Bruin</a> ELT pipeline, storing it in BigQuery, and serving interactive analytics — complete with <strong>semantic anime recommendations</strong> powered by sentence embeddings.
+</p>
+
+<p align="center">
+  <a href="https://mal-data-pipeline-zprefllqfdr4htgqq6ggdq.streamlit.app/"><img src="https://img.shields.io/badge/🚀 Live Demo-FF4B4B?style=for-the-badge&logoColor=white"/></a>
+  &nbsp;
+  <a href="https://github.com/DataTalksClub/data-engineering-zoomcamp"><img src="https://img.shields.io/badge/DE Zoomcamp-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white"/></a>
+  &nbsp;
+  <a href="https://getbruin.com/competition/"><img src="https://img.shields.io/badge/Bruin Competition-000000?style=for-the-badge&logoColor=white"/></a>
+</p>
+
+---
+
+### 🔗 Project Links
+
+| Resource | URL |
+|---|---|
+| Live Dashboard | [streamlit.app](https://mal-data-pipeline-zprefllqfdr4htgqq6ggdq.streamlit.app/) |
+| GitHub | [Omega-84/mal-data-pipeline](https://github.com/Omega-84/mal-data-pipeline) |
 
 ---
 
