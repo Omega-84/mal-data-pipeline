@@ -63,6 +63,11 @@ The project demonstrates:
 
 ## 🏗️ Architecture
 
+<p align="center">
+  <img src="img/architecture.png" alt="OtakuLens Architecture"/>
+</p>
+
+
 ```
 Jikan API (MyAnimeList)
         │
@@ -154,6 +159,15 @@ pipeline/
 
 All intermediate and mart assets have AI-generated descriptions and column-level quality checks via `bruin ai enhance`.
 
+### 💾 Data Warehouse Optimization
+
+**Partitioning:** `mart_anime` is partitioned by `airing_start` (YEAR).
+- **Reasoning:** Most analytical and dashboard queries filter by a specific time range or release year. Partitioning reduces the bytes processed and improves query performance for temporal trend analysis.
+
+**Clustering:** `mart_anime` is clustered by `genre_1`.
+- **Reasoning:** Categorical filtering by genre is the primary way users interact with the dashboard and recommendation engine. Clustering ensures that data for the same genre is stored in close proximity, optimizing filter-heavy scan operations.
+
+
 ---
 
 ## 🎌 OtakuLens Dashboard
@@ -173,6 +187,13 @@ Dark-gold themed Streamlit dashboard with:
 - **Semantic recommendations** — 6 similar anime via sentence embeddings (synopsis + genres/themes/studio, same media type, same-series filtered)
 
 Automatically falls back to local DuckDB when BigQuery is unavailable.
+
+### 🖼️ Dashboard Gallery
+
+| Home / Selection | Analytics & Metrics | Recommendations |
+| :---: | :---: | :---: |
+| ![Dashboard 1](img/SS1.png) | ![Dashboard 2](img/SS2.png) | ![Dashboard 3](img/SS3.png) |
+
 
 ---
 
@@ -369,3 +390,19 @@ Capstone project covering: cloud infrastructure, data lake, warehouse (partition
 - [DataTalks.Club](https://datatalks.club/) — DE Zoomcamp
 - [Bruin](https://getbruin.com/) — ELT orchestration + AI analysis
 - [sentence-transformers](https://www.sbert.net/) — Semantic similarity
+
+---
+
+## ✅ Capstone Evaluation Checklist
+
+| Criterion | Project Implementation |
+| :--- | :--- |
+| **Problem Description** | Detailed in "About the Project" and "Objective" sections. |
+| **Cloud** | Fully deployed on Google Cloud (GCS + BigQuery). |
+| **Infrastructure as Code** | Terraform used for provisioning (see `terraform/` directory). |
+| **Workflow Orchestration** | End-to-end DAG managed by Bruin (seeds → ingest → load → staging → intermediate → mart). |
+| **Data Warehouse** | BigQuery tables partitioned by year and clustered by genre (see "Data Warehouse Optimization"). |
+| **Transformations** | Multi-layer ELT pipeline defined with Bruin SQL assets. |
+| **Dashboard** | 8+ interactive tiles including histograms, donut charts, and recommendation grids. |
+| **Reproducibility** | Complete `uv` environment, Terraform scripts, and step-by-step instructions provided. |
+
